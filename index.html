@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#02030a">
+<title>Para Sofía</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#e7c98b;--blue:#afc7f4;--ink:#f3ead8;--sb:env(safe-area-inset-bottom,0px);--st:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:#02030a;color:var(--ink);font-family:'Cormorant Garamond','Playfair Display',Georgia,serif}
+body{height:100dvh;background:radial-gradient(120% 90% at 50% 40%,#0b1534 0%,#050a1c 48%,#02030a 100%)}
+#stage{position:fixed;inset:0;height:100dvh;touch-action:manipulation;user-select:none;-webkit-user-select:none;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.layer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 7vw;pointer-events:none;opacity:0;transition:opacity .7s ease}
+.layer.show{opacity:1}
+.layer.show .btn{pointer-events:auto}
+button{font-family:inherit}
+button:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
+.btn{font-size:1.15rem;font-style:italic;letter-spacing:.03em;color:var(--ink);background:rgba(243,234,216,.04);border:1px solid rgba(243,234,216,.3);border-radius:999px;padding:.85em 2.2em;min-height:52px;cursor:pointer;pointer-events:none;transition:background .3s,border-color .3s;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.btn:hover{background:rgba(231,201,139,.12);border-color:rgba(231,201,139,.6)}
+#name{margin:0;font-size:clamp(4.4rem,21vw,9.5rem);font-weight:300;font-style:italic;letter-spacing:.01em;line-height:1;text-shadow:0 0 44px rgba(231,201,139,.35)}
+#title p{margin:.7em 0 2.4em;font-size:clamp(1.15rem,3.6vw,1.55rem);font-style:italic;font-weight:300;opacity:.75}
+.txt{position:relative;isolation:isolate;opacity:0;transform:translateY(8px);transition:opacity .6s ease,transform .6s ease;font-weight:300;line-height:1.3;max-width:19em;text-wrap:balance;text-shadow:0 0 22px rgba(2,3,10,.95)}
+.txt::before,#phrase::before{content:"";position:absolute;inset:-1em -1.4em;z-index:-1;background:radial-gradient(closest-side,rgba(2,3,10,.62),transparent)}
+.txt.show{opacity:1;transform:none}
+#line{white-space:pre-line;margin:0;font-size:clamp(1.75rem,5.6vw,3.1rem);pointer-events:none}
+#linewrap{pointer-events:none}
+#head{justify-content:flex-start;padding-top:calc(var(--st) + 9vh)}
+#head h2{margin:0;font-weight:400;font-size:clamp(1.6rem,4.6vw,2.6rem);line-height:1.2;text-wrap:balance}
+#head p{margin:.6em 0 0;font-style:italic;font-weight:300;font-size:clamp(1.05rem,3vw,1.35rem);opacity:.7}
+#phrase{position:relative;isolation:isolate;margin:0;width:min(86vw,24em);font-weight:300;font-size:clamp(1.65rem,5vw,2.8rem);line-height:1.3;text-wrap:balance;text-shadow:0 0 20px rgba(2,3,10,.95);opacity:0}
+#phrase.out{opacity:0;transition:opacity .24s}
+#phrase.pop{animation:pop 1.2s cubic-bezier(.2,.7,.2,1) both}
+@keyframes pop{from{opacity:0;transform:translateY(12px) scale(.97);filter:blur(7px);letter-spacing:.07em}to{opacity:1;transform:none;filter:blur(0);letter-spacing:.01em}}
+#hits{position:absolute;inset:0;pointer-events:none;z-index:4}
+.sh{position:absolute;width:54px;height:54px;margin:-27px 0 0 -27px;background:transparent;border:0;border-radius:50%;pointer-events:none;cursor:pointer;padding:0}
+#hits.on .sh{pointer-events:auto}
+#next{position:fixed;left:50%;bottom:calc(var(--sb) + 46px);transform:translateX(-50%);z-index:5;opacity:0;pointer-events:none;transition:opacity .6s ease,background .3s,border-color .3s;padding:.7em 1.9em;font-size:1.05rem}
+#next.show{opacity:.72;pointer-events:auto;transition-delay:.9s,0s,0s}
+#next.show:hover{opacity:1}
+#prog{position:fixed;left:50%;bottom:calc(var(--sb) + 22px);width:min(200px,46vw);height:2px;transform:translateX(-50%);background:rgba(243,234,216,.12);border-radius:2px;z-index:5;pointer-events:none}
+#bar{height:100%;width:0;background:var(--gold);border-radius:2px;transition:width .9s ease;box-shadow:0 0 8px rgba(231,201,139,.6)}
+#snd{position:fixed;top:calc(var(--st) + 12px);right:12px;width:48px;height:48px;border-radius:50%;border:1px solid rgba(243,234,216,.2);background:rgba(2,3,10,.35);color:var(--ink);opacity:.7;z-index:6;display:grid;place-items:center;cursor:pointer;padding:0;transition:opacity .3s}
+#snd:hover{opacity:1}
+#snd svg{width:22px;height:22px}
+#snd .slash{display:none}
+#snd.off .slash{display:block}
+#snd.off .wave{display:none}
+#final .it{opacity:0;transition:opacity 1.6s ease}
+#final.show .it{opacity:1}
+#final:not(.show) .it{transition-delay:0s!important}
+#final .big{margin:0;font-weight:300;font-size:clamp(2.1rem,7vw,4rem);line-height:1.25;max-width:14em;text-wrap:balance;text-shadow:0 0 26px rgba(2,3,10,.9)}
+#final .sub{margin:1.1em 0 0;font-style:italic;font-weight:300;font-size:clamp(1.2rem,3.6vw,1.6rem);opacity:.8}
+.abs{position:absolute;left:50%;transform:translateX(-50%)}
+#final .sign{bottom:calc(var(--sb) + 124px);margin:0;white-space:nowrap;color:var(--gold);font-style:italic;font-weight:400;font-size:clamp(1.5rem,5vw,2.2rem)}
+#final .btn{bottom:calc(var(--sb) + 46px);padding:.7em 1.9em;font-size:1.05rem}
+@media (prefers-reduced-motion:reduce){#phrase.pop{animation-duration:.01s}.txt,.layer{transition-duration:.01s}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+
+  <div class="layer" id="title">
+    <h1 id="name">Sofía</h1>
+    <p>Quiero mostrarte algo</p>
+    <button class="btn" id="start">Comenzar →</button>
+  </div>
+
+  <div class="layer" id="linewrap" style="opacity:1"><p class="txt" id="line"></p></div>
+
+  <div class="layer" id="head">
+    <h2>Hay cosas que brillan diferente.</h2>
+    <p>Toca cada estrella para descubrirlo.</p>
+  </div>
+
+  <div class="layer" id="phraseL" style="opacity:1"><p id="phrase"></p></div>
+
+  <div id="hits"></div>
+
+  <div class="layer" id="final">
+    <p class="big it" style="transition-delay:.3s">mi coincidencia favorita...<br>fue encontrarte a ti.</p>
+    <p class="sub it" style="transition-delay:2s">Para Sofía</p>
+    <p class="sign abs it" style="transition-delay:3.2s">Con amor, Anthony</p>
+    <button class="btn abs it" id="again" style="transition-delay:4.4s">Volver a mirar</button>
+  </div>
+
+  <button class="btn" id="next">Continuar →</button>
+  <div id="prog"><div id="bar"></div></div>
+
+  <button id="snd" class="off" aria-label="Activar música" aria-pressed="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z"/><path class="wave" d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/><path class="slash" d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+  </button>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W = 0, H = 0, dpr = 1, cx = 0, cy = 0, GR = 300;
+
+/* ---------- Guion ---------- */
+const L1 = ["Antes de nosotros...","ya existía todo un universo.","Hubo un tiempo en el que tú y yo...","éramos dos historias, la de Sofía y la de Anthony, que todavía no se conocían.","Vivimos días distintos.","Guardamos recuerdos distintos.","Conocimos lugares distintos.","Y durante mucho tiempo...","nuestros caminos ni siquiera sabían que iban a encontrarse."];
+const L2 = ["Entre millones de decisiones...","millones de lugares...","y millones de momentos...","bastaba una pequeña diferencia para no coincidir.","Y aun así...","entre todas esas posibilidades..."];
+const L3 = ["coincidimos.","Y desde entonces...","Sofía y Anthony.\nNosotros.","mi universo tiene un lugar que antes no existía.","Si alguien me preguntara dónde está mi lugar favorito del universo...","no señalaría una estrella.","Te señalaría a ti, Sofía."];
+const L5 = ["Dicen que el universo es inmenso.","Y probablemente tengan razón.","Pero desde que te encontré, Sofía...","ya no me parece tan grande.","Porque sé exactamente dónde quiero estar.","Entre miles de millones de estrellas...","entre millones de lugares...","entre todas las historias que pudieron existir...","mi coincidencia favorita..."];
+const PH = ["La tranquilidad de estar contigo.","Tu sonrisa.","Tus ojitos de miel.","Tus colochitos.","Tus abrazos.","Las conversaciones que no quiero terminar.","Esos abrazos que me llenan de paz.","Cada recuerdo que todavía nos falta crear.","Tu forma de hacer especial un día normal."];
+const steps = [{k:'title'}];
+L1.forEach(t => steps.push({k:'line', t, ph:1}));
+L2.forEach((t, j) => steps.push({k:'line', t, ph:2, c:0.18 + j*0.13}));
+L3.forEach((t, j) => steps.push({k:'line', t, ph:3, first:j === 0}));
+steps.push({k:'stars'});
+L5.forEach(t => steps.push({k:'line', t, ph:5}));
+steps.push({k:'final'});
+
+/* ---------- Estado visual ---------- */
+const S = {c:0, cT:0, merging:false, merged:false, pa:1, flash:0, g:0, gT:0, sa:0, sT:0, glow:.8, glowT:.8, boost:PH.map(() => 0)};
+let LN = [], reached = 0, idx = 0, lock = false, timers = [];
+const T = (f, ms) => { const id = setTimeout(f, ms); timers.push(id); return id; };
+const clearT = () => { timers.forEach(clearTimeout); timers = []; };
+
+/* ---------- Sprites de luz ---------- */
+function glow(r, g, b){
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d'), gr = x.createRadialGradient(64,64,0,64,64,64);
+  gr.addColorStop(0, `rgba(${r},${g},${b},1)`); gr.addColorStop(.25, `rgba(${r},${g},${b},.45)`);
+  gr.addColorStop(.6, `rgba(${r},${g},${b},.1)`); gr.addColorStop(1, `rgba(${r},${g},${b},0)`);
+  x.fillStyle = gr; x.fillRect(0,0,128,128); return c;
+}
+const GG = glow(231,201,139), GB = glow(175,199,244), GW = glow(255,246,230);
+const dg = (img, x, y, r, a) => { ctx.globalAlpha = a; ctx.drawImage(img, x-r, y-r, r*2, r*2); };
+
+/* ---------- Fondo de estrellas ---------- */
+let BS = [];
+function buildBg(){
+  const n = Math.min(260, Math.floor(W*H/5500)); BS = [];
+  for (let i = 0; i < n; i++) BS.push({x:Math.random()*W, y:Math.random()*H, s:Math.random()<.12?1.8:1, p:Math.random()*6.28, v:.4+Math.random()*1.4, a:.25+Math.random()*.55});
+}
+function drawBg(t){
+  ctx.fillStyle = '#dfe8ff';
+  for (const s of BS){ ctx.globalAlpha = s.a*(.55+.45*Math.sin(t*s.v+s.p))*(reduce?.8:1); ctx.fillRect(s.x, s.y, s.s, s.s); }
+}
+
+/* ---------- Galaxia ---------- */
+const PC = ['#e7c98b','#ffffff','#afc7f4'], PA = [.35,.6,.9];
+let buckets = [], rot = 0;
+function buildGalaxy(){
+  const N = W < 700 ? 2800 : 4600, B = [];
+  for (let i = 0; i < 18; i++) B.push({c:Math.floor(i/6), a:Math.floor((i%6)/2), s:i%2, x:[], y:[]});
+  for (let i = 0; i < N; i++){
+    let r = Math.pow(Math.random(), 1.45)*.97 + .02;
+    const arm = (i%3)*Math.PI*2/3;
+    const sc = (Math.random()+Math.random()+Math.random()-1.5)*.8*(.25+r*.6);
+    const th = arm + r*5.4 + sc;
+    r += (Math.random()-.5)*.04;
+    const c = Math.random() < .5*(1-r)+.12 ? 0 : (Math.random() < .45 ? 1 : 2);
+    const b = B[c*6 + Math.floor(Math.random()*3)*2 + (Math.random()<.1?1:0)];
+    b.x.push(r*Math.cos(th)); b.y.push(r*Math.sin(th));
+  }
+  buckets = B.map(b => ({c:b.c, a:b.a, s:b.s, x:Float32Array.from(b.x), y:Float32Array.from(b.y)}));
+}
+function drawGalaxy(dt){
+  const g = S.g; if (g < .004) return;
+  rot += dt*(reduce ? .015 : .045);
+  const R = GR*g, al = Math.min(1, g*1.6)*S.glow;
+  dg(GG, cx, cy, R*.55, .55*al); dg(GW, cx, cy, R*.16, .8*al);
+  const ca = Math.cos(rot), sa = Math.sin(rot), tl = .56, tc = Math.cos(-.38), ts = Math.sin(-.38);
+  const m11 = tc*ca - ts*tl*sa, m12 = -tc*sa - ts*tl*ca, m21 = ts*ca + tc*tl*sa, m22 = -ts*sa + tc*tl*ca;
+  for (const b of buckets){
+    ctx.fillStyle = PC[b.c]; ctx.globalAlpha = PA[b.a]*al;
+    const sz = b.s ? 2.2 : 1.2, n = b.x.length;
+    ctx.beginPath();
+    for (let k = 0; k < n; k++){
+      const px = b.x[k], py = b.y[k];
+      ctx.rect(cx + R*(px*m11 + py*m12), cy + R*(px*m21 + py*m22), sz, sz);
+    }
+    ctx.fill();
+  }
+}
+
+/* ---------- Dos puntos de luz ---------- */
+function pt(t){
+  const e = S.c, k = 1 - e*.8, sx = Math.min(W*.36, 420), sy = H*.21;
+  return [cx - sx*(1-e) + Math.sin(t*.6)*14*k, cy - sy*(1-e) + Math.cos(t*.45)*12*k,
+          cx + sx*(1-e) + Math.sin(t*.5+2)*14*k, cy + sy*(1-e) + Math.cos(t*.7+1)*12*k];
+}
+function drawPoints(t){
+  if (S.pa < .01) return;
+  const p = pt(t), pu = Math.sin(t*1.5)*5;
+  dg(GG, p[0], p[1], 44+pu, .9*S.pa); dg(GW, p[0], p[1], 12, S.pa);
+  dg(GB, p[2], p[3], 44-pu, .9*S.pa); dg(GW, p[2], p[3], 12, S.pa);
+}
+function drawFlash(){
+  if (S.flash <= 0) return;
+  const f = S.flash, r = GR*.25 + (1-f)*GR*1.3;
+  dg(GW, cx, cy, r, f*.9); dg(GW, cx, cy, r*.4, f);
+}
+
+/* ---------- Estrellas interactivas ---------- */
+const NS = PH.length;
+const HP = [.75, 1.35, 1.95, 2.4, Math.PI, 2*Math.PI - 2.4, 2*Math.PI - 1.95, 2*Math.PI - 1.35, 2*Math.PI - .75].map(a => { // contorno del corazón
+  const q = Math.sin(a);
+  return [16*q*q*q, 13*Math.cos(a) - 5*Math.cos(2*a) - 2*Math.cos(3*a) - Math.cos(4*a)];
+});
+function sXY(i, t, fl){
+  const sc = Math.min(W*.8/32, H*.52/29, 22);
+  return [cx + HP[i][0]*sc + (fl ? Math.sin(t*.5+i*1.7)*4 : 0), H*.56 - (HP[i][1]+2.5)*sc + (fl ? Math.cos(t*.4+i)*4 : 0)];
+}
+function drawStars(t, dt){
+  if (S.sa < .01) return;
+  ctx.lineWidth = 1;
+  for (const l of LN){
+    l.p = Math.min(1, l.p + dt*1.2);
+    const A = l.a < 0 ? [cx, cy] : sXY(l.a, t, 1), B = sXY(l.b, t, 1), e = 1 - Math.pow(1-l.p, 3);
+    ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(231,201,139,' + (.45*S.sa) + ')';
+    ctx.beginPath(); ctx.moveTo(A[0], A[1]); ctx.lineTo(A[0] + (B[0]-A[0])*e, A[1] + (B[1]-A[1])*e); ctx.stroke();
+  }
+  for (let i = 0; i < NS; i++){
+    const [x, y] = sXY(i, t, 1), pu = .5 + .5*Math.sin(t*1.7 + i*1.3);
+    const st = i < reached ? 2 : (i === reached ? 1 : 0), bo = S.boost[i];
+    S.boost[i] = Math.max(0, bo - dt*1.2);
+    let r, a, img;
+    if (st === 2){ r = 24 + 4*pu + bo*24; a = 1; img = GG; }
+    else if (st === 1){ r = 20 + 8*pu; a = 1; img = GW; }
+    else { r = 13 + 2*pu; a = .35; img = GB; }
+    dg(img, x, y, r*1.6, a*S.sa);
+    ctx.globalAlpha = Math.min(1, (st ? 1 : .5)*S.sa); ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(x, y, st ? 3.4 : 2, 0, 6.283); ctx.fill();
+    if (st){
+      const L = (st === 2 ? 16 : 12) + 8*pu + bo*20;
+      ctx.globalAlpha = .55*S.sa; ctx.strokeStyle = st === 2 ? '#e7c98b' : '#ffffff';
+      ctx.beginPath(); ctx.moveTo(x-L, y); ctx.lineTo(x+L, y); ctx.moveTo(x, y-L); ctx.lineTo(x, y+L); ctx.stroke();
+    }
+    if (st === 1){
+      const q = (t*.8 + i) % 1;
+      ctx.globalAlpha = (1-q)*.5*S.sa; ctx.strokeStyle = '#afc7f4';
+      ctx.beginPath(); ctx.arc(x, y, 16 + q*26, 0, 6.283); ctx.stroke();
+    }
+  }
+}
+
+/* ---------- Bucle principal (60 fps) ---------- */
+let last = 0;
+function frame(now){
+  requestAnimationFrame(frame);
+  const t = now/1000, dt = Math.min(.05, t - last); last = t;
+  S.c += (S.cT - S.c)*(1 - Math.exp(-dt*(S.merging ? 3.2 : 1.3)));
+  S.pa += ((S.merged ? 0 : 1) - S.pa)*(1 - Math.exp(-dt*4));
+  S.g += (S.gT - S.g)*(1 - Math.exp(-dt*(S.gT > S.g ? .85 : 1.6)));
+  S.flash = Math.max(0, S.flash - dt*.7);
+  S.sa += (S.sT - S.sa)*(1 - Math.exp(-dt*2.2));
+  S.glow += (S.glowT - S.glow)*(1 - Math.exp(-dt*1.2));
+  ctx.clearRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+  drawBg(t); drawGalaxy(dt); drawPoints(t); drawFlash(); drawStars(t, dt);
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- Layout ---------- */
+const hitsEl = $('#hits'), hitBtns = [];
+for (let i = 0; i < NS; i++){
+  const b = document.createElement('button');
+  b.className = 'sh'; b.setAttribute('aria-label', 'Estrella ' + (i+1));
+  b.addEventListener('click', e => { e.stopPropagation(); tapStar(i); });
+  hitsEl.appendChild(b); hitBtns.push(b);
+}
+function resize(){
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = stage.clientWidth; H = stage.clientHeight;
+  cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx = W/2; cy = H*.5; GR = Math.min(W*.5, H*.42, 560);
+  hitBtns.forEach((b, i) => { const p = sXY(i, 0, 0); b.style.left = p[0] + 'px'; b.style.top = p[1] + 'px'; });
+  buildBg();
+}
+
+/* ---------- Narrativa ---------- */
+const titleL = $('#title'), lineEl = $('#line'), headL = $('#head'), finalL = $('#final'), nextBtn = $('#next'), ph = $('#phrase'), bar = $('#bar');
+let pTok = 0;
+function showPhrase(txt){
+  const tok = ++pTok, d = ph.classList.contains('pop') ? 240 : 0;
+  ph.classList.remove('pop'); ph.classList.add('out');
+  setTimeout(() => { if (tok !== pTok) return; ph.textContent = txt; ph.classList.remove('out'); void ph.offsetWidth; ph.classList.add('pop'); }, d);
+}
+function tapStar(i){
+  if (steps[idx].k !== 'stars' || i > reached) return;
+  S.boost[i] = 1;
+  if (i === reached){
+    if (i > 0) LN.push({a:i-1, b:i, p:0});
+    reached++;
+    if (reached === NS){ LN.push({a:NS-1, b:0, p:0}); S.boost.fill(.7); nextBtn.classList.add('show'); }
+  }
+  showPhrase(PH[i]);
+}
+function hideUI(){ [lineEl, titleL, headL, finalL, nextBtn].forEach(e => e.classList.remove('show')); }
+function leaveStars(){
+  S.sT = 0; hitsEl.classList.remove('on'); pTok++;
+  ph.classList.remove('pop'); ph.classList.add('out');
+  setTimeout(() => { if (steps[idx].k !== 'stars') ph.textContent = ''; }, 400);
+}
+function render(st){
+  if (st.k === 'title') titleL.classList.add('show');
+  else if (st.k === 'line'){ lineEl.textContent = st.t; lineEl.classList.add('show'); nextBtn.classList.add('show'); }
+  else if (st.k === 'stars'){ headL.classList.add('show'); if (reached === NS) nextBtn.classList.add('show'); }
+  else finalL.classList.add('show');
+}
+function go(i, d0){
+  const prev = steps[idx]; idx = i; const st = steps[i]; lock = true;
+  if (prev.k === 'stars') leaveStars();
+  hideUI();
+  bar.style.width = (i/(steps.length-1)*100) + '%';
+  let d = d0 === undefined ? 520 : d0;
+  if (st.k === 'title'){ S.cT = 0; }
+  else if (st.k === 'line'){
+    if (st.ph === 1) S.cT = 0;
+    else if (st.ph === 2) S.cT = st.c;
+    else if (st.ph === 3 && st.first){
+      S.cT = 1; S.merging = true; d = 1700;
+      T(() => { S.c = 1; S.merged = true; S.flash = 1; S.gT = 1; }, 1000);
+    }
+    else if (st.ph === 5){ S.glowT = .95; }
+  }
+  else if (st.k === 'stars'){ S.sT = 1; hitsEl.classList.add('on'); }
+  else if (st.k === 'final'){ S.glowT = 1.1; }
+  T(() => { render(st); lock = false; }, d);
+}
+function next(){
+  if (lock) return;
+  const st = steps[idx];
+  if (st.k === 'stars' && reached < NS) return;
+  if (idx < steps.length - 1) go(idx + 1);
+}
+function restart(){
+  if (lock) return;
+  clearT(); LN = []; reached = 0;
+  Object.assign(S, {c:0, cT:0, merging:false, merged:false, gT:0, sT:0, glowT:.8, flash:0});
+  S.boost.fill(0); pTok++; ph.classList.remove('pop'); ph.textContent = '';
+  go(0, 700);
+}
+
+stage.addEventListener('click', () => { if (steps[idx].k === 'line') next(); });
+nextBtn.addEventListener('click', next);
+$('#start').addEventListener('click', () => { setMusic(true); next(); });
+$('#again').addEventListener('click', restart);
+document.addEventListener('keydown', e => {
+  if ((e.key === 'ArrowRight' || e.key === ' ') && document.activeElement === document.body && steps[idx].k === 'line'){ e.preventDefault(); next(); }
+});
+
+/* ---------- Música ambiental (Web Audio) ---------- */
+let AC = null, AG = null, musicOn = false;
+const sndBtn = $('#snd');
+const CH = [[110,164.81,220,261.63,329.63],[87.31,130.81,174.61,261.63,349.23],[130.81,196,261.63,329.63,392],[98,146.83,196,246.94,293.66]];
+const PENT = [880,987.77,1174.66,1318.51,1567.98];
+function startAudio(){
+  const A = window.AudioContext || window.webkitAudioContext; if (!A) return;
+  AC = new A();
+  const master = AC.createGain(); master.gain.value = 0;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 1100; lp.Q.value = .3;
+  const dl = AC.createDelay(2); dl.delayTime.value = .55;
+  const fb = AC.createGain(); fb.gain.value = .45;
+  const dlp = AC.createBiquadFilter(); dlp.type = 'lowpass'; dlp.frequency.value = 1800;
+  const wet = AC.createGain(); wet.gain.value = .5;
+  lp.connect(master); lp.connect(dl); dl.connect(dlp); dlp.connect(fb); fb.connect(dl); dlp.connect(wet); wet.connect(master); master.connect(AC.destination);
+  const lfo = AC.createOscillator(); lfo.frequency.value = .07;
+  const lg = AC.createGain(); lg.gain.value = 350; lfo.connect(lg); lg.connect(lp.frequency); lfo.start();
+  const voices = [];
+  for (let j = 0; j < 5; j++){
+    const arr = [];
+    ['sine','triangle'].forEach((type, q) => {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = type; o.detune.value = q ? 7 : 0; o.frequency.value = CH[0][j]; g.gain.value = .03;
+      o.connect(g); g.connect(lp); o.start(); arr.push(o);
+    });
+    voices.push(arr);
+  }
+  let ci = 0;
+  setInterval(() => {
+    ci = (ci + 1) % CH.length;
+    voices.forEach((arr, j) => arr.forEach(o => o.frequency.setTargetAtTime(CH[ci][j], AC.currentTime, 2.5)));
+  }, 9000);
+  AG = {master, dl};
+  (function bell(){
+    if (musicOn && AC.state === 'running'){
+      const o = AC.createOscillator(), g = AC.createGain(), n = AC.currentTime;
+      o.type = 'sine'; o.frequency.value = PENT[Math.floor(Math.random()*PENT.length)];
+      g.gain.setValueAtTime(0, n); g.gain.linearRampToValueAtTime(.05, n + .03); g.gain.exponentialRampToValueAtTime(.0001, n + 3.2);
+      o.connect(g); g.connect(AG.dl); g.connect(AG.master); o.start(n); o.stop(n + 3.3);
+    }
+    setTimeout(bell, 2600 + Math.random()*3600);
+  })();
+}
+function setMusic(on){
+  musicOn = on;
+  try {
+    if (on){
+      if (!AC) startAudio();
+      if (AC){ AC.resume(); AG.master.gain.setTargetAtTime(.55, AC.currentTime, .8); }
+    } else if (AC){
+      AG.master.gain.setTargetAtTime(0, AC.currentTime, .4);
+      setTimeout(() => { if (!musicOn && AC) AC.suspend(); }, 1500);
+    }
+  } catch (err) { /* el audio es opcional */ }
+  sndBtn.classList.toggle('off', !on);
+  sndBtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  sndBtn.setAttribute('aria-label', on ? 'Pausar música' : 'Activar música');
+}
+sndBtn.addEventListener('click', e => { e.stopPropagation(); setMusic(!musicOn); });
+document.addEventListener('visibilitychange', () => {
+  if (!AC) return;
+  if (document.hidden) AC.suspend(); else if (musicOn) AC.resume();
+});
+
+/* ---------- Inicio ---------- */
+buildGalaxy();
+resize();
+addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 200));
+go(0, 300);
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
